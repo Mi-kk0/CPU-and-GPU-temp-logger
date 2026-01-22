@@ -38,7 +38,7 @@ int main(void)
         if (pFileGpu == NULL)
             return 1;
         if (fgets(buffer, sizeof(buffer), pFileGpu)!=NULL)
-            buffer[strcspn(buffer, "\r\n")] = 0; // To usuwa \n lub \r z końca
+            buffer[strcspn(buffer, "\r\n")] = 0;
         pclose(pFileGpu);
         FILE *log = fopen("log.csv", "a");
         fprintf(log,"%s, %.2f, %s\n",timestamp,temp_raw/1000.0, buffer);
