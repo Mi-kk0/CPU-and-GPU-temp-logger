@@ -20,7 +20,7 @@ bool isFileACpuInfo(char *path)
     {
         line[strcspn(line, "\n")] = 0;
 
-        if (strcmp(line, "k10temp") == 0)
+        if (strcmp(line, "k10temp") == 0 || strcmp(line, "coretemp") == 0)
         {
             fclose(file);
             return true;
