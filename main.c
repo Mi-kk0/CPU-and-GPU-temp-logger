@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
@@ -38,7 +37,7 @@ void find_cpu_temperature_path(char *path)
     if (pDir == NULL)
     {
         perror("Error while opening directory /sys/class/hwmon/ check if your system stores cpu temp there");
-        path = "";
+        path = "\0";
         return;
     }
     struct dirent *entry;
@@ -60,7 +59,7 @@ void find_cpu_temperature_path(char *path)
     if (!found)
     {
         perror("Not found cpu file");
-        path="";
+        path="\0";
         return;
     }
 
@@ -71,7 +70,7 @@ void find_cpu_temperature_path(char *path)
 
 int main(void)
 {
-    char path[1024] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[2048] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0]=='\0')
@@ -82,16 +81,13 @@ int main(void)
     while (1)
     {
         time_t rawtime;
-        struct tm * timeinfo;
         char timestamp[20];
         time(&rawtime);
-        timeinfo = localtime(&rawtime);
+        struct tm * timeinfo = localtime(&rawtime);
         strftime(timestamp, sizeof(timestamp),"%Y-%m-%d %H:%M:%S",timeinfo);
 
-        FILE *pFileCpu;
-
         int temp_raw;
-        pFileCpu = fopen(path, "r");
+        FILE* pFileCpu = fopen(path, "r");
         if (pFileCpu == NULL)
         {
             perror("Error while opening the file");
@@ -105,9 +101,8 @@ int main(void)
         }
         fclose(pFileCpu);
 
-        FILE *pFileGpu;
         char buffer[10];
-        pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
+        FILE* pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
         if (pFileGpu == NULL)
             return 1;
         if (fgets(buffer, sizeof(buffer), pFileGpu)!=NULL)
@@ -118,5 +113,6 @@ int main(void)
         fclose(log);
         sleep(10);
     }
+
     return 0;
 }
