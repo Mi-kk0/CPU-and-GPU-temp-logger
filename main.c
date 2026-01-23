@@ -89,6 +89,7 @@ int main(void)
         strftime(timestamp, sizeof(timestamp),"%Y-%m-%d %H:%M:%S",timeinfo);
 
         FILE *pFileCpu;
+
         int temp_raw;
         pFileCpu = fopen(path, "r");
         if (pFileCpu == NULL)
