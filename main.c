@@ -67,7 +67,6 @@ void find_cpu_temperature_path(char *path)
 }
 
 
-
 int main(void)
 {
     char path[2048] = "/sys/class/hwmon/hwmon1/temp1_input";
@@ -78,7 +77,7 @@ int main(void)
 
     printf("Started using path : %s\n", path);
 
-    while (1)
+    while (true)
     {
         time_t raw_time;
         char timestamp[20];
