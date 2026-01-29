@@ -1,15 +1,14 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
 #include <stdbool.h>
 
-bool isFileACpuInfo(char *path)
+bool is_file_a_cpu_info(char *path)
 {
     char name_file_path[1024];
-    snprintf(name_file_path, sizeof(name_file_path), "%s/name", path);
+    snprintf(name_file_path, 1024, "%s/name", path);
     FILE *file = fopen(name_file_path, "r");
     if (file == NULL)
     {
@@ -21,7 +20,7 @@ bool isFileACpuInfo(char *path)
     {
         line[strcspn(line, "\n")] = 0;
 
-        if (strcmp(line, "k10temp") == 0)
+        if (strcmp(line, "k10temp") == 0 || strcmp(line, "coretemp") == 0)
         {
             fclose(file);
             return true;
@@ -38,7 +37,7 @@ void find_cpu_temperature_path(char *path)
     if (pDir == NULL)
     {
         perror("Error while opening directory /sys/class/hwmon/ check if your system stores cpu temp there");
-        path = "";
+        path[0] = '\0';
         return;
     }
     struct dirent *entry;
@@ -49,7 +48,7 @@ void find_cpu_temperature_path(char *path)
 
         char folder_path[1024];
         snprintf(folder_path, sizeof(folder_path), "/sys/class/hwmon/%s", entry->d_name);
-        if (isFileACpuInfo(folder_path))
+        if (is_file_a_cpu_info(folder_path))
         {
             snprintf(path, 1024, "%s/temp1_input", folder_path);
             found = true;
@@ -60,7 +59,7 @@ void find_cpu_temperature_path(char *path)
     if (!found)
     {
         perror("Not found cpu file");
-        path="";
+        path[0] = '\0';
         return;
     }
 
@@ -71,7 +70,7 @@ void find_cpu_temperature_path(char *path)
 
 int main(void)
 {
-    char path[1024] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[2048] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0]=='\0')
@@ -81,17 +80,14 @@ int main(void)
 
     while (1)
     {
-        time_t rawtime;
-        struct tm * timeinfo;
+        time_t raw_time;
         char timestamp[20];
-        time(&rawtime);
-        timeinfo = localtime(&rawtime);
+        time(&raw_time);
+        struct tm * timeinfo = localtime(&raw_time);
         strftime(timestamp, sizeof(timestamp),"%Y-%m-%d %H:%M:%S",timeinfo);
 
-        FILE *pFileCpu;
-
         int temp_raw;
-        pFileCpu = fopen(path, "r");
+        FILE* pFileCpu = fopen(path, "r");
         if (pFileCpu == NULL)
         {
             perror("Error while opening the file");
@@ -105,18 +101,25 @@ int main(void)
         }
         fclose(pFileCpu);
 
-        FILE *pFileGpu;
+
+
         char buffer[10];
-        pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
+        FILE* pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
         if (pFileGpu == NULL)
             return 1;
         if (fgets(buffer, sizeof(buffer), pFileGpu)!=NULL)
             buffer[strcspn(buffer, "\r\n")] = 0;
         pclose(pFileGpu);
-        FILE *log = fopen("log.csv", "a");
-        fprintf(log,"%s, %.2f, %s\n",timestamp,temp_raw/1000.0, buffer);
-        fclose(log);
+        double current_temp = temp_raw / 1000.0;
+        if (current_temp > 0 && current_temp < 115) {
+            FILE *log = fopen("log.csv", "a");
+            fprintf(log, "%s, %.2f, %s\n", timestamp, current_temp, buffer);
+            fclose(log);
+        } else {
+            fprintf(stderr, "Błędny odczyt temperatury (%.2f)\n", current_temp);
+        }
         sleep(10);
     }
+
     return 0;
 }
