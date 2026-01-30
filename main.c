@@ -5,10 +5,13 @@
 #include <dirent.h>
 #include <stdbool.h>
 
+#define SLEEP_TIME 10
+#define MAX_PATH_LEN 1024
+
 bool is_file_a_cpu_info(char *path)
 {
-    char name_file_path[1024];
-    snprintf(name_file_path, 1024, "%s/name", path);
+    char name_file_path[MAX_PATH_LEN];
+    snprintf(name_file_path, MAX_PATH_LEN, "%s/name", path);
     FILE *file = fopen(name_file_path, "r");
     if (file == NULL)
     {
@@ -46,11 +49,11 @@ void find_cpu_temperature_path(char *path)
     {
         if (entry->d_name[0] == '.') continue;
 
-        char folder_path[1024];
+        char folder_path[MAX_PATH_LEN];
         snprintf(folder_path, sizeof(folder_path), "/sys/class/hwmon/%s", entry->d_name);
         if (is_file_a_cpu_info(folder_path))
         {
-            snprintf(path, 1024, "%s/temp1_input", folder_path);
+            snprintf(path, MAX_PATH_LEN, "%s/temp1_input", folder_path);
             found = true;
             break;
         }
@@ -69,7 +72,7 @@ void find_cpu_temperature_path(char *path)
 
 int main(void)
 {
-    char path[2048] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[MAX_PATH_LEN] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0]=='\0')
@@ -100,8 +103,6 @@ int main(void)
         }
         fclose(pFileCpu);
 
-
-
         char buffer[10];
         FILE* pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
         if (pFileGpu == NULL)
@@ -112,12 +113,19 @@ int main(void)
         double current_temp = temp_raw / 1000.0;
         if (current_temp > 0 && current_temp < 115) {
             FILE *log = fopen("log.csv", "a");
-            fprintf(log, "%s, %.2f, %s\n", timestamp, current_temp, buffer);
-            fclose(log);
+            if (log == NULL)
+            {
+                perror("Error while opening log file");
+            }
+            else
+            {
+                fprintf(log, "%s, %.2f, %s\n", timestamp, current_temp, buffer);
+                fclose(log);
+            }
         } else {
             fprintf(stderr, "Błędny odczyt temperatury (%.2f)\n", current_temp);
         }
-        sleep(10);
+        sleep(SLEEP_TIME);
     }
 
     return 0;
