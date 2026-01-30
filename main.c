@@ -6,12 +6,12 @@
 #include <stdbool.h>
 
 #define SLEEP_TIME 10
-#define MAX_PATH_LEN 1024
+#define PATH_LEN 4096
 
 bool is_file_a_cpu_info(char *path)
 {
-    char name_file_path[MAX_PATH_LEN];
-    snprintf(name_file_path, MAX_PATH_LEN, "%s/name", path);
+    char name_file_path[PATH_LEN];
+    snprintf(name_file_path, PATH_LEN, "%s/name", path);
     FILE *file = fopen(name_file_path, "r");
     if (file == NULL)
     {
@@ -49,11 +49,11 @@ void find_cpu_temperature_path(char *path)
     {
         if (entry->d_name[0] == '.') continue;
 
-        char folder_path[MAX_PATH_LEN];
+        char folder_path[PATH_LEN];
         snprintf(folder_path, sizeof(folder_path), "/sys/class/hwmon/%s", entry->d_name);
         if (is_file_a_cpu_info(folder_path))
         {
-            snprintf(path, MAX_PATH_LEN, "%s/temp1_input", folder_path);
+            snprintf(path, PATH_LEN, "%s/temp1_input", folder_path);
             found = true;
             break;
         }
@@ -72,7 +72,7 @@ void find_cpu_temperature_path(char *path)
 
 int main(void)
 {
-    char path[MAX_PATH_LEN] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[PATH_LEN] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0]=='\0')
