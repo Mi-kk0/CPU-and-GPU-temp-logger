@@ -8,6 +8,7 @@
 #define SLEEP_TIME 10
 #define PATH_LEN 4096
 
+
 bool is_file_a_cpu_info(char *path)
 {
     char name_file_path[PATH_LEN];
@@ -53,7 +54,7 @@ void find_cpu_temperature_path(char *path)
         snprintf(folder_path, sizeof(folder_path), "/sys/class/hwmon/%s", entry->d_name);
         if (is_file_a_cpu_info(folder_path))
         {
-            snprintf(path, PATH_LEN, "%s/temp1_input", folder_path);
+            snprintf(path, PATH_LEN+32, "%s/temp1_input", folder_path);
             found = true;
             break;
         }
@@ -65,14 +66,48 @@ void find_cpu_temperature_path(char *path)
         path[0] = '\0';
         return;
     }
+}
 
+double get_cpu_temperature(const char *path)
+{
+    int temp_raw;
+    FILE* pFileCpu = fopen(path, "r");
+    if (pFileCpu == NULL)
+    {
+        perror("Error while opening the file");
+        return -1;
+    }
+    if (fscanf(pFileCpu,"%d", &temp_raw)!=1)
+    {
+        fprintf(stderr, "Error while reading from file\n");
+        fclose(pFileCpu);
+        return -1;
+    }
+    fclose(pFileCpu);
+    return (double)temp_raw/1000.0;
 
+}
+void get_gpu_temperature(char *output_buffer,const int buffer_size)
+{
+    FILE* pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
+    if (pFileGpu == NULL)
+    {
+        snprintf(output_buffer, buffer_size, "N/A");
+        return;
+    }
+    if (fgets(output_buffer, buffer_size, pFileGpu)!=NULL)
+        output_buffer[strcspn(output_buffer, "\r\n")] = 0;
+    else
+    {
+        snprintf(output_buffer, buffer_size, "N/A");
+    }
+    pclose(pFileGpu);
 }
 
 
 int main(void)
 {
-    char path[PATH_LEN] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[PATH_LEN+32] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0]=='\0')
@@ -88,30 +123,12 @@ int main(void)
         struct tm * timeinfo = localtime(&raw_time);
         strftime(timestamp, sizeof(timestamp),"%Y-%m-%d %H:%M:%S",timeinfo);
 
-        int temp_raw;
-        FILE* pFileCpu = fopen(path, "r");
-        if (pFileCpu == NULL)
-        {
-            perror("Error while opening the file");
-            return 1;
-        }
-        if (fscanf(pFileCpu,"%d", &temp_raw)!=1)
-        {
-            fprintf(stderr, "Error while reading from file\n");
-            fclose(pFileCpu);
-            return 1;
-        }
-        fclose(pFileCpu);
 
-        char buffer[10];
-        FILE* pFileGpu = popen("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits", "r");
-        if (pFileGpu == NULL)
-            return 1;
-        if (fgets(buffer, sizeof(buffer), pFileGpu)!=NULL)
-            buffer[strcspn(buffer, "\r\n")] = 0;
-        pclose(pFileGpu);
-        double current_temp = temp_raw / 1000.0;
-        if (current_temp > 0 && current_temp < 115) {
+        char gpu_temp[16];
+        get_gpu_temperature(gpu_temp, sizeof(gpu_temp));
+
+        const double cpu_temp = get_cpu_temperature(path);
+        if (cpu_temp > 0 && cpu_temp < 115) {
             FILE *log = fopen("log.csv", "a");
             if (log == NULL)
             {
@@ -119,14 +136,13 @@ int main(void)
             }
             else
             {
-                fprintf(log, "%s, %.2f, %s\n", timestamp, current_temp, buffer);
+                fprintf(log, "%s, %.2f, %s\n", timestamp, cpu_temp, gpu_temp);
                 fclose(log);
             }
         } else {
-            fprintf(stderr, "Błędny odczyt temperatury (%.2f)\n", current_temp);
+            fprintf(stderr, "Błędny odczyt temperatury (%.2f)\n", cpu_temp);
         }
         sleep(SLEEP_TIME);
     }
-
     return 0;
 }
