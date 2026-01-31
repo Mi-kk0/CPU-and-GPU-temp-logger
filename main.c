@@ -1,11 +1,15 @@
 #include <dirent.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
-#define SLEEP_TIME 10
+#define MAX_LOG_NAME_LENGTH 32
+#define DEFAULT_LOG_FILE "log.csv"
+#define DEFAULT_SLEEP_TIME 10
 #define PATH_LEN 4096
 #define MAX_TEMP 115
 #define MIN_TEMP 0
@@ -105,10 +109,53 @@ void get_gpu_temperature(char* output_buffer, const int buffer_size)
     }
     pclose(pFileGpu);
 }
-
-
-int main(void)
+void print_usage(char *name)
 {
+    printf("Usage: ./%s [-i delay in seconds] [-f log file name]\n",name);
+    printf("Default delay is %d seconds\n",DEFAULT_SLEEP_TIME);
+    printf("Default log file is %s\n", DEFAULT_LOG_FILE);
+}
+
+int main(int argc, char ** argv)
+{
+    long sleep_time = DEFAULT_SLEEP_TIME;
+    char log_filename[MAX_LOG_NAME_LENGTH] = DEFAULT_LOG_FILE;
+    int opt;
+
+
+    while ((opt = getopt(argc, argv, "i:f:h")) != -1)
+    {
+        switch (opt)
+        {
+            case 'i':
+            {
+                char * endptr;
+                long val = strtol(optarg, &endptr, 10);
+                if (endptr ==optarg || *endptr != '\0')
+                {
+                    fprintf(stderr, "Invalid argument '%s'\n",optarg);
+                    return 1;
+                }
+                if (val < 0)
+                {
+                    val = DEFAULT_SLEEP_TIME;
+                }
+                sleep_time = (int)val;
+                break;
+            }
+            case 'f':
+            strncpy(log_filename, optarg, sizeof(log_filename) - 1);
+            log_filename[sizeof(log_filename) - 1] = '\0';
+            break;
+            case 'h':
+            print_usage(argv[0]);
+            return 0;
+            default:
+            print_usage(argv[0]);
+            return 1;
+        }
+    }
+
     char path[PATH_LEN + 32] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
@@ -118,10 +165,10 @@ int main(void)
     printf("Started using path : %s\n", path);
 
     //If file doesn't exist we add headers explaining each column
-    FILE * check_log = fopen("log.csv", "r");
+    FILE * check_log = fopen(log_filename, "r");
     if (check_log == NULL)
     {
-        FILE* init_log = fopen("log.csv", "w");
+        FILE* init_log = fopen(log_filename, "w");
         if (init_log != NULL)
         {
             fprintf(init_log, "Timestamp, CPU_TEMP_C, GPU_TEMP_C\n");
@@ -148,7 +195,7 @@ int main(void)
         const double cpu_temp = get_cpu_temperature(path);
         if (cpu_temp > MIN_TEMP && cpu_temp < MAX_TEMP)
         {
-            FILE* log = fopen("log.csv", "a");
+            FILE* log = fopen(log_filename, "a");
             if (log == NULL)
             {
                 perror("Error while opening log file");
@@ -163,7 +210,7 @@ int main(void)
         {
             fprintf(stderr, "Error while reading cpu_temp (%.2f)\n", cpu_temp);
         }
-        sleep(SLEEP_TIME);
+        sleep(sleep_time);
     }
     return 0;
 }
