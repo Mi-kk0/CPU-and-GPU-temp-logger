@@ -1,23 +1,23 @@
 #include <dirent.h>
-#include <getopt.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
+#include <limits.h>
+#include<stdbool.h>
 #define MAX_LOG_NAME_LENGTH 32
 #define DEFAULT_LOG_FILE "log.csv"
 #define DEFAULT_SLEEP_TIME 10
-#define PATH_LEN 4096
 #define MAX_TEMP 115
 #define MIN_TEMP 0
-
+#define TEMP_SUFFIX "/temp1_input"
+#define NAME_SUFFIX "/name"
+#define FULL_PATH_MAX (PATH_MAX + sizeof(TEMP_SUFFIX) + sizeof(NAME_SUFFIX))
 bool is_file_a_cpu_info(char* path)
 {
-    char name_file_path[PATH_LEN];
-    snprintf(name_file_path, PATH_LEN, "%s/name", path);
+    char name_file_path[PATH_MAX];
+    snprintf(name_file_path, PATH_MAX, "%s/name", path);
     FILE* file = fopen(name_file_path, "r");
     if (file == NULL)
     {
@@ -56,11 +56,11 @@ void find_cpu_temperature_path(char* path)
         if (entry->d_name[0] == '.')
             continue;
 
-        char folder_path[PATH_LEN];
-        snprintf(folder_path, sizeof(folder_path), "/sys/class/hwmon/%s", entry->d_name);
+        char folder_path[PATH_MAX];
+        snprintf(folder_path, sizeof(folder_path) - sizeof(TEMP_SUFFIX), "/sys/class/hwmon/%s", entry->d_name);
         if (is_file_a_cpu_info(folder_path))
         {
-            snprintf(path, PATH_LEN + 32, "%s/temp1_input", folder_path);
+            snprintf(path, FULL_PATH_MAX, "%s" TEMP_SUFFIX, folder_path);
             found = true;
             break;
         }
@@ -156,7 +156,7 @@ int main(int argc, char ** argv)
         }
     }
 
-    char path[PATH_LEN + 32] = "/sys/class/hwmon/hwmon1/temp1_input";
+    char path[FULL_PATH_MAX] = "/sys/class/hwmon/hwmon1/temp1_input";
     find_cpu_temperature_path(path);
 
     if (path[0] == '\0')
