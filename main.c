@@ -1,11 +1,11 @@
 #include <dirent.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <limits.h>
-#include<stdbool.h>
 #define MAX_LOG_NAME_LENGTH 32
 #define DEFAULT_LOG_FILE "log.csv"
 #define DEFAULT_SLEEP_TIME 10
@@ -109,14 +109,14 @@ void get_gpu_temperature(char* output_buffer, const int buffer_size)
     }
     pclose(pFileGpu);
 }
-void print_usage(char *name)
+void print_usage(char* name)
 {
-    printf("Usage: ./%s [-i delay in seconds] [-f log file name]\n",name);
-    printf("Default delay is %d seconds\n",DEFAULT_SLEEP_TIME);
+    printf("Usage: ./%s [-i delay in seconds] [-f log file name]\n", name);
+    printf("Default delay is %d seconds\n", DEFAULT_SLEEP_TIME);
     printf("Default log file is %s\n", DEFAULT_LOG_FILE);
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char** argv)
 {
     long sleep_time = DEFAULT_SLEEP_TIME;
     char log_filename[MAX_LOG_NAME_LENGTH] = DEFAULT_LOG_FILE;
@@ -127,13 +127,13 @@ int main(int argc, char ** argv)
     {
         switch (opt)
         {
-            case 'i':
+        case 'i':
             {
-                char * endptr;
+                char* endptr;
                 long val = strtol(optarg, &endptr, 10);
-                if (endptr ==optarg || *endptr != '\0')
+                if (endptr == optarg || *endptr != '\0')
                 {
-                    fprintf(stderr, "Invalid argument '%s'\n",optarg);
+                    fprintf(stderr, "Invalid argument '%s'\n", optarg);
                     return 1;
                 }
                 if (val < 0)
@@ -143,14 +143,14 @@ int main(int argc, char ** argv)
                 sleep_time = (int)val;
                 break;
             }
-            case 'f':
+        case 'f':
             strncpy(log_filename, optarg, sizeof(log_filename) - 1);
             log_filename[sizeof(log_filename) - 1] = '\0';
             break;
-            case 'h':
+        case 'h':
             print_usage(argv[0]);
             return 0;
-            default:
+        default:
             print_usage(argv[0]);
             return 1;
         }
@@ -164,8 +164,8 @@ int main(int argc, char ** argv)
 
     printf("Started using path : %s\n", path);
 
-    //If file doesn't exist we add headers explaining each column
-    FILE * check_log = fopen(log_filename, "r");
+    // If file doesn't exist we add headers explaining each column
+    FILE* check_log = fopen(log_filename, "r");
     if (check_log == NULL)
     {
         FILE* init_log = fopen(log_filename, "w");
