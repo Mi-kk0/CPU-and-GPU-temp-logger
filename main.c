@@ -1,10 +1,10 @@
 #include <dirent.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <time.h>
 #include <unistd.h>
 #define MAX_LOG_NAME_LENGTH 32
@@ -120,7 +120,7 @@ volatile sig_atomic_t keep_running = 1;
 
 void sigint_handler(int signum)
 {
-    (void)signum; //silence warnings
+    (void)signum; // silence warnings
     keep_running = 0;
 }
 int main(int argc, char** argv)
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 
     char cmd[256];
 
-    snprintf(cmd, sizeof(cmd), "python main.py %s",log_filename);
+    snprintf(cmd, sizeof(cmd), "python main.py %s", log_filename);
 
     int ret = system(cmd);
     if (ret != 0)
