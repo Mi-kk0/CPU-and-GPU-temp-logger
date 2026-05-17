@@ -1,6 +1,10 @@
 import sys
 import pandas as pd
 import seaborn as sns
+
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 
 
@@ -27,7 +31,7 @@ try:
 
     plt.title('Temperature chart',fontsize = 16)
     plt.xlabel('Timestamp',fontsize = 12)
-    plt.ylabel('Temperature',fontsize = 12)
+    plt.ylabel('Temperature[C]',fontsize = 12)
     plt.xticks(rotation = 45)
     plt.tight_layout()
 
@@ -36,3 +40,4 @@ try:
     print(f"Chart saved to {output_image}")
 except Exception as e:
     print(f"Error: {e}")
+    sys.exit(1)
