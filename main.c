@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 #include <unistd.h>
 #define MAX_LOG_NAME_LENGTH 32
@@ -115,9 +116,17 @@ void print_usage(char* name)
     printf("Default delay is %d seconds\n", DEFAULT_SLEEP_TIME);
     printf("Default log file is %s\n", DEFAULT_LOG_FILE);
 }
+volatile sig_atomic_t keep_running = 1;
 
+void sigint_handler(int signum)
+{
+    (void)signum; //silence warnings
+    keep_running = 0;
+}
 int main(int argc, char** argv)
 {
+    signal(SIGINT, sigint_handler);
+
     long sleep_time = DEFAULT_SLEEP_TIME;
     char log_filename[MAX_LOG_NAME_LENGTH] = DEFAULT_LOG_FILE;
     int opt;
@@ -180,7 +189,7 @@ int main(int argc, char** argv)
         fclose(check_log);
     }
 
-    while (true)
+    while (keep_running)
     {
         time_t raw_time;
         char timestamp[20];
@@ -212,5 +221,30 @@ int main(int argc, char** argv)
         }
         sleep(sleep_time);
     }
+
+    printf("Finished using path : %s\n", path);
+    printf("Do you want to generate graphical raport [Y/n]\n");
+    int choice = getchar();
+
+    if (choice != 'Y' && choice != 'y')
+    {
+        return 0;
+    }
+
+    char cmd[256];
+
+    snprintf(cmd, sizeof(cmd), "python main.py %s",log_filename);
+
+    int ret = system(cmd);
+    if (ret != 0)
+    {
+        fprintf(stderr, "Error executing command : %s\n", cmd);
+    }
+    else
+    {
+        printf("Chart has been generated!");
+    }
+
+
     return 0;
 }
