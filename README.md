@@ -18,6 +18,9 @@ make
 ## Requirements
 - Linux
 - GPU temperature logging requires nvidia-smi installed
-
+- python3 with
+```bash
+pip install pandas seaborn matplotlib
+```
 You can also use this program to generate human readable chart of temperature
 ![example](assets/example.png)
